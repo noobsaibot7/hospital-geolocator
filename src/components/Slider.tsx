@@ -1,14 +1,12 @@
 import React from "react";
 import { Icon, Slider as MapSlider } from "antd";
 
-
-interface Props{
-    iconType: string,
-    value?: number,
-    onChange: ((value:any) => void) | undefined,
-    text: string
+interface Props {
+  iconType: string;
+  value?: number;
+  onChange: ((value: any) => void) | undefined;
+  text: string;
 }
-
 
 function Slider({ iconType, value, onChange, text }: Props) {
   return (

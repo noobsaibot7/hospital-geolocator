@@ -1,7 +1,7 @@
 import React from "react";
-
 import { Rate } from "antd";
-import image from "./images/no-image.jpg";
+
+// import image from "./images/no-image.jpg";
 
 interface Place {
   address: string;

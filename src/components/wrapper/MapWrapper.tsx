@@ -1,5 +1,6 @@
-import React, { useState} from "react";
+import React, { useState } from "react";
 import GoogleMapReact from "google-map-react";
+import { Button, Divider, message } from "antd";
 
 import AutoCompleteMap from "../AutoCompleteMap";
 import Marker from "../Marker";
@@ -7,37 +8,35 @@ import Card from "../Card";
 import Slider from "../Slider";
 import mapStyles from "../../mapStyles";
 
-import { Button, Divider, message } from "antd";
-
 const LG_COOR = { lat: 6.465422, lng: 3.406448 };
 
-interface Strap{
-    key: any,
-    libraries: any[],
+interface Strap {
+  key: any;
+  libraries: any[];
 }
 
-interface Address{
-    constraints: any,
-    radius: any,
-    searchResults: any[],
-    mapsLoaded: boolean,
-    markers: any[],
-    map: any,
-    mapsApi: any,
-    lagosLatLng: any,
-    autoCompleteService: any,
-    placesService: any,
-    geoCoderService: any,
-    directionService: any
+interface Address {
+  constraints: any;
+  radius: any;
+  searchResults: any[];
+  mapsLoaded: boolean;
+  markers: any[];
+  map: any;
+  mapsApi: any;
+  lagosLatLng: any;
+  autoCompleteService: any;
+  placesService: any;
+  geoCoderService: any;
+  directionService: any;
 }
 
 const mapKeys: Strap = {
   key: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   libraries: ["places", "directions"]
-}
+};
 
 function MapWrapper() {
-  const initialState:Address = {
+  const initialState: Address = {
     constraints: { name: "" },
     radius: { value: 1 },
     searchResults: [],
@@ -53,16 +52,13 @@ function MapWrapper() {
   };
   const [state, setState] = useState(() => initialState);
 
- 
-
   function updateRadius(value: number) {
     setState({ ...state, radius: { value } });
   }
 
   function addMarker(lat: number, lng: number, name: string) {
-    const prevMarkers  = state.markers;
+    const prevMarkers = state.markers;
     const markers: any[] = [...prevMarkers];
-
 
     let newMarker = true;
     for (let i = 0; i < markers.length; i++) {
@@ -109,23 +105,20 @@ function MapWrapper() {
       message.warn("Add an address and try again!");
       return;
     }
-    const filteredResults:any[] = [];
+    const filteredResults: any[] = [];
     const marker = markers[0];
     const markerLatLng = new mapsApi.LatLng(marker.lat, marker.lng);
     const radiusVal = radius.value * 1000;
 
     const placesRequest = {
       location: markerLatLng,
-      radius: radiusVal, 
-      types: ["hospital", "health"], 
+      radius: radiusVal,
+      types: ["hospital", "health"],
       query: "hospital",
-      rankBy: mapsApi.places.RankBy.DISTANCE 
+      rankBy: mapsApi.places.RankBy.DISTANCE
     };
 
-
-
     placesService.textSearch(placesRequest, (response: any[]) => {
-
       for (let i = 0; i < response.length; i++) {
         const hospitalPlace = response[i];
         const { rating, name } = hospitalPlace;
@@ -133,7 +126,7 @@ function MapWrapper() {
         let photoUrl = "";
         let openNow = false;
         if (hospitalPlace.opening_hours) {
-          openNow = hospitalPlace.opening_hours.isOpen(); 
+          openNow = hospitalPlace.opening_hours.isOpen();
         }
         if (hospitalPlace.photos && hospitalPlace.photos.length > 0) {
           photoUrl = hospitalPlace.photos[0].getUrl();
@@ -144,36 +137,39 @@ function MapWrapper() {
           destination: address,
           travelMode: "DRIVING"
         };
-        directionService.route(directionRequest, (result: any, status: string) => {
-          if (status !== "OK") {
-            return;
+        directionService.route(
+          directionRequest,
+          (result: any, status: string) => {
+            if (status !== "OK") {
+              return;
+            }
+
+            const travellingRoute = result.routes[0].legs[0];
+            const travellingTimeInMinutes = travellingRoute.duration.value / 60;
+
+            const distanceText = travellingRoute.distance.text;
+            const timeText = travellingRoute.duration.text;
+            filteredResults.push({
+              name,
+              rating,
+              address,
+              openNow,
+              photoUrl,
+              distanceText,
+              timeText,
+              travellingTimeInMinutes
+            });
+            const sortedResult = filteredResults.sort(
+              (loc1, loc2) =>
+                loc1.travellingTimeInMinutes - loc2.travellingTimeInMinutes
+            );
+
+            setState({ ...state, searchResults: sortedResult });
+
+            state.map.panTo(markerLatLng);
+            state.map.setZoom(14);
           }
-
-          const travellingRoute = result.routes[0].legs[0]; 
-          const travellingTimeInMinutes = travellingRoute.duration.value / 60;
-
-          const distanceText = travellingRoute.distance.text; 
-          const timeText = travellingRoute.duration.text;
-          filteredResults.push({
-            name,
-            rating,
-            address,
-            openNow,
-            photoUrl,
-            distanceText,
-            timeText,
-            travellingTimeInMinutes
-          });
-          const sortedResult = filteredResults.sort(
-            (loc1, loc2) =>
-              loc1.travellingTimeInMinutes - loc2.travellingTimeInMinutes
-          );
-
-          setState({ ...state, searchResults: sortedResult });
-
-          state.map.panTo(markerLatLng);
-          state.map.setZoom(14);
-        });
+        );
       }
     });
   }
@@ -219,15 +215,12 @@ function MapWrapper() {
               Search!
             </Button>
 
-            {(searchResults.length > 0) && (
-              <p className="text-primary mt-4" >
-                scroll down for results
-              </p>
+            {searchResults.length > 0 && (
+              <p className="text-primary mt-4">scroll down for results</p>
             )}
           </div>
         ) : null}
       </section>
-
 
       <section className="col-12 h-lg">
         <GoogleMapReact
@@ -236,9 +229,8 @@ function MapWrapper() {
           defaultZoom={15}
           defaultCenter={{ lat: LG_COOR.lat, lng: LG_COOR.lng }}
           yesIWantToUseGoogleMapApiInternals={true}
-          onGoogleApiLoaded={({ map, maps }) => apiHasLoaded(map, maps)} 
+          onGoogleApiLoaded={({ map, maps }) => apiHasLoaded(map, maps)}
         >
-     
           {markers.map((marker, key) => {
             const { name, lat, lng } = marker;
             return <Marker key={key} name={name} lat={lat} lng={lng} />;
@@ -248,7 +240,6 @@ function MapWrapper() {
 
       {searchResults.length > 0 ? (
         <>
-
           <Divider />
           <section className="col-12">
             <div className="d-flex flex-column justify-content-center">
@@ -257,7 +248,6 @@ function MapWrapper() {
               </h4>
               <div className="d-flex flex-wrap">
                 {searchResults.map((result, key: any) => (
-                  
                   <Card info={result} key={key} />
                 ))}
               </div>
