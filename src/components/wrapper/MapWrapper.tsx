@@ -31,7 +31,7 @@ interface Address{
     directionService: any
 }
 
-const Keys: Strap = {
+const mapKeys: Strap = {
   key: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   libraries: ["places", "directions"]
 }
@@ -231,7 +231,7 @@ function MapWrapper() {
 
       <section className="col-12 h-lg">
         <GoogleMapReact
-          bootstrapURLKeys={Keys}
+          bootstrapURLKeys={mapKeys}
           options={options}
           defaultZoom={15}
           defaultCenter={{ lat: LG_COOR.lat, lng: LG_COOR.lng }}
