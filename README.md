@@ -1,4 +1,4 @@
-Finf nearest health centers to you
+Find nearest health centers to you
 
 Maintain the same requirements from Challenge 1. In addition, the app will be extended in the following ways:
 
