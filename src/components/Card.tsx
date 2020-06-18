@@ -15,10 +15,10 @@ interface Place {
 
 interface Props {
   info: Place;
-  key: string;
+ 
 }
 
-const Card: React.FC<Props> = ({ info, key }) => {
+const Card: React.FC<Props> = ({ info}) => {
   const {
     address,
     distanceText,
@@ -29,7 +29,8 @@ const Card: React.FC<Props> = ({ info, key }) => {
     timeText
   }: Place = info;
   return (
-    <div key={key} className="col-3 w-100 mx-4 my-4">
+
+    <div className="col-sm-3 w-100 mx-4 my-4">
       {/* 
       API for photoservices needs billing before image can be displayed
       <img
@@ -45,13 +46,14 @@ const Card: React.FC<Props> = ({ info, key }) => {
           <span className="d-block">{timeText}</span>
         </div>
         <ul className="list-group list-group-flush">
-          <li className="list-group-item">{openNow ? "Open" : "Closed"}</li>
+          <li className="list-group-item">{openNow ? "Stay Safe" : "Stay Safe"}</li>
           <li className="list-group-item">
             Rating - <Rate value={rating} />
           </li>
         </ul>
       </div>
     </div>
+
   );
 };
 

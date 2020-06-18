@@ -25,7 +25,7 @@ function AutoCompleteMap(props: any){
     function onSelect(value: any){
         state.geoCoderService.geocode({ address: value }, ((response: any) => {
           const { location } = response[0].geometry;
-          props.addMarker(location.lat(), location.lng(), props.markerName);
+          props.addMarker(location.lat(), location.lng(), props.markerName, value);
         }))
       } 
 

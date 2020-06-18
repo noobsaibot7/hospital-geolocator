@@ -1,3 +1,12 @@
+Finf nearest health centers to you
+
+Maintain the same requirements from Challenge 1. In addition, the app will be extended in the following ways:
+
+- Users should be able to search for Hospitals, Pharmacies, Clinics and Medical Offices
+- Users should be able to see past results
+- There should be a place that a user can click to see all the results that have been searched on the app
+- Clicking on a past search result should trigger a request and the results should be displayed for the user.
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts

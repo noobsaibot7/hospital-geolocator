@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import GoogleMapReact from "google-map-react";
 import { Button, Divider, message } from "antd";
 
@@ -6,6 +6,9 @@ import AutoCompleteMap from "../AutoCompleteMap";
 import Marker from "../Marker";
 import Card from "../Card";
 import Slider from "../Slider";
+import SelectHealth from "../SelectHealth";
+import ModalHistory from "../ModalHistory";
+import firebase from "../firebase";
 import mapStyles from "../../mapStyles";
 
 const LG_COOR = { lat: 6.465422, lng: 3.406448 };
@@ -15,8 +18,15 @@ interface Strap {
   libraries: any[];
 }
 
+interface SearchTerm {
+  radius: any;
+  searchType: any;
+  markers: any;
+}
+
 interface Address {
   constraints: any;
+  searchType: any;
   radius: any;
   searchResults: any[];
   mapsLoaded: boolean;
@@ -38,6 +48,7 @@ const mapKeys: Strap = {
 function MapWrapper() {
   const initialState: Address = {
     constraints: { name: "" },
+    searchType: { name: "clinic" },
     radius: { value: 1 },
     searchResults: [],
     mapsLoaded: false,
@@ -52,13 +63,57 @@ function MapWrapper() {
   };
   const [state, setState] = useState(() => initialState);
 
+  function updateSearchType(name: string) {
+    setState({ ...state, searchType: { name } });
+  }
+
   function updateRadius(value: number) {
     setState({ ...state, radius: { value } });
   }
 
-  function addMarker(lat: number, lng: number, name: string) {
-    const prevMarkers = state.markers;
-    const markers: any[] = [...prevMarkers];
+  function updateFromHistory({ radius, searchType, markers }: SearchTerm) {
+    setState({ ...state, radius, searchType, markers: [...markers] });
+  }
+
+  const saveToConsole = useCallback(
+    (markers: any, radius: any, searchType: any) => {
+      const storage: any = localStorage.getItem("health--zapp");
+      const store = firebase.firestore().collection(storage);
+
+      let data: firebase.firestore.DocumentData[] = [];
+      store.get().then(querySnap => {
+        if (querySnap.empty) {
+          store.add({
+            markers,
+            searchType,
+            radius
+          });
+        }
+
+        querySnap.forEach(doc => {
+          data.push(doc.data());
+        });
+        const found = data.find(
+          location =>
+            markers[0].value === location.markers[0].value &&
+            radius.value === location.radius.value &&
+            searchType.name === location.searchType.name
+        );
+
+        if (!found && !querySnap.empty) {
+          store.add({
+            markers,
+            searchType,
+            radius
+          });
+        }
+      });
+    },
+    []
+  );
+
+  function addMarker(lat: number, lng: number, name: string, value: string) {
+    const markers: any[] = [...state.markers];
 
     let newMarker = true;
     for (let i = 0; i < markers.length; i++) {
@@ -66,17 +121,18 @@ function MapWrapper() {
         newMarker = false;
         markers[i].lat = lat;
         markers[i].lng = lng;
+        markers[i].value = value;
         message.success(`Updated location Marker`);
         break;
       }
     }
 
     if (newMarker) {
-      markers.push({ lat, lng, name });
+      markers.push({ lat, lng, name, value });
       message.success(`Added new location Marker`);
     }
 
-    setState({ ...state, markers });
+    setState({ ...state, markers: [...markers] });
   }
 
   const options = {
@@ -100,21 +156,30 @@ function MapWrapper() {
   }
 
   function handleSearch() {
-    const { markers, placesService, directionService, mapsApi, radius } = state;
+    const {
+      markers,
+      placesService,
+      directionService,
+      mapsApi,
+      radius,
+      searchType
+    } = state;
     if (markers.length === 0) {
-      message.warn("Add an address and try again!");
-      return;
+      return message.warn("Add an address and try again!");
     }
     const filteredResults: any[] = [];
     const marker = markers[0];
     const markerLatLng = new mapsApi.LatLng(marker.lat, marker.lng);
     const radiusVal = radius.value * 1000;
+    const types =
+      searchType.name === "pharmacy" ? ["pharmacy", "drugstore"] : ["hospital"];
+    saveToConsole(markers, radius, searchType);
 
     const placesRequest = {
       location: markerLatLng,
       radius: radiusVal,
-      types: ["hospital", "health"],
-      query: "hospital",
+      types: types,
+      query: searchType.name,
       rankBy: mapsApi.places.RankBy.DISTANCE
     };
 
@@ -182,7 +247,8 @@ function MapWrapper() {
     searchResults,
     radius,
     autoCompleteService,
-    geoCoderService
+    geoCoderService,
+    searchType
   } = state;
 
   return (
@@ -199,6 +265,10 @@ function MapWrapper() {
                 addMarker={addMarker}
               />
             </div>
+            <SelectHealth
+              value={searchType.name}
+              onChangeType={updateSearchType}
+            />
             <Slider
               iconType="compass"
               value={radius.value}
@@ -237,6 +307,13 @@ function MapWrapper() {
           })}
         </GoogleMapReact>
       </section>
+      {
+        <ModalHistory
+          updateLocation={updateFromHistory}
+          makeSearch={handleSearch}
+          marker={markers}
+        />
+      }
 
       {searchResults.length > 0 ? (
         <>
@@ -244,11 +321,11 @@ function MapWrapper() {
           <section className="col-12">
             <div className="d-flex flex-column justify-content-center">
               <h4 className="mb-4 fw-md">
-                {searchResults.length} hospitals are closest to you by car
+                {searchResults.length} options are closest to you by car
               </h4>
               <div className="d-flex flex-wrap">
-                {searchResults.map((result, key: any) => (
-                  <Card info={result} key={key} />
+                {searchResults.map((result, index) => (
+                  <Card info={result} key={index} />
                 ))}
               </div>
             </div>
