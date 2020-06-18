@@ -165,7 +165,7 @@ function MapWrapper() {
       searchType
     } = state;
     if (markers.length === 0) {
-      return message.warn("Add an address and try again!");
+      return message.warn("Add an address!");
     }
     const filteredResults: any[] = [];
     const marker = markers[0];
