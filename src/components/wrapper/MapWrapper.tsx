@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import GoogleMapReact from "google-map-react";
+
 import { Button, Divider, message } from "antd";
 
 import AutoCompleteMap from "../AutoCompleteMap";
@@ -8,8 +9,10 @@ import Card from "../Card";
 import Slider from "../Slider";
 import SelectHealth from "../SelectHealth";
 import ModalHistory from "../ModalHistory";
-import firebase from "../firebase";
+import { firestore } from "../firebase";
 import mapStyles from "../../mapStyles";
+
+import { UserContext } from "../provider/ProviderUser";
 
 const LG_COOR = { lat: 6.465422, lng: 3.406448 };
 
@@ -74,13 +77,13 @@ function MapWrapper() {
   function updateFromHistory({ radius, searchType, markers }: SearchTerm) {
     setState({ ...state, radius, searchType, markers: [...markers] });
   }
+  const storageContext: any = useContext(UserContext);
 
   const saveToConsole = useCallback(
     (markers: any, radius: any, searchType: any) => {
-      const storage: any = localStorage.getItem("health--zapp");
-      const store = firebase.firestore().collection(storage);
+      const store = firestore.collection(storageContext.uid);
 
-      let data: firebase.firestore.DocumentData[] = [];
+      let data: any[] = [];
       store.get().then(querySnap => {
         if (querySnap.empty) {
           store.add({

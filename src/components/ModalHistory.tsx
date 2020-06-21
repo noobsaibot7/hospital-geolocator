@@ -1,43 +1,50 @@
-import React, { useState, useEffect } from "react";
-import firebase from "./firebase";
+import React, { useState, useEffect, useContext } from "react";
+
+import { gql } from "apollo-boost";
+import { useQuery } from "@apollo/react-hooks";
+import { firestore } from "./firebase";
 
 import { Modal, Button } from "antd";
+import { UserContext } from "./provider/ProviderUser";
 
-function useStore(val: any) {
-  const [store, setStore] = useState([]);
-
-  useEffect(() => {
-  
-
-    const storage: any = localStorage.getItem("health--zapp");
-   
-    if (storage) {
-        const cloud = firebase.firestore().collection(storage);
-        cloud
-          .orderBy("searchType.name")
-          .onSnapshot(snapshot => {
-            const newTimes: any = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            setStore(newTimes);
-          });
-
+const GET_HISTORY = gql`
+  query getHistory($userId: String!) {
+    historyResult(uid: $userId) {
+      markers {
+        lat
+        lng
+        name
+        value
+      }
+      id
+      radius {
+        value
+      }
+      searchType {
+        name
+      }
     }
-  }, [val]);
-  return store;
-}
+  }
+`;
 
 function ModalHistory(props: any) {
   const [state, setState] = useState({ visible: false });
   const [address, setAddress] = useState({});
-  const stores = useStore(state);
+
+  // const store: any = useStore(state);
+  const storageContext: any = useContext(UserContext);
+  const { loading, error, data, refetch } = useQuery(GET_HISTORY, {
+    variables: { userId: storageContext.uid }
+  });
+
 
   useEffect(() => {
     props.makeSearch();
+    refetch()
   }, [address]);
 
   const showModal = () => {
+    refetch()
     setState({
       visible: true
     });
@@ -50,6 +57,7 @@ function ModalHistory(props: any) {
   };
 
   const handleCancel = () => {
+    refetch()
     setState({
       visible: false
     });
@@ -58,7 +66,6 @@ function ModalHistory(props: any) {
   const getLocation = (store: React.SetStateAction<{}>) => {
     props.updateLocation(store);
     setAddress(store);
-
     handleCancel();
   };
 
@@ -72,22 +79,26 @@ function ModalHistory(props: any) {
         visible={state.visible}
         onOk={handleOk}
         onCancel={handleCancel}
-        
       >
         <ol>
-          {stores &&
-            stores.map((store: any) => (
-              <li
-                key={store.id}
-                className="text-primary mt-1"
-                onClick={() => getLocation(store)}
-              >
-                <a>
-                  {store.markers[0].value} at {store.radius.value}KM for a{" "}
-                  {store.searchType.name}
-                </a>
-              </li>
-            ))}
+          {
+            loading && <li>Loading, Please wait a little while</li>
+          }
+          {
+            error && <li>Error, please check back later</li>
+          }
+        {data ? data.historyResult.map((store: any) => (
+            <li
+              key={store.id}
+              className="text-primary mt-1"
+              onClick={() => getLocation(store)}
+            >
+              <a>
+                {store.markers[0].value} at {store.radius.value}KM for a{" "}
+                {store.searchType.name}
+              </a>
+            </li>
+          )): ''}
         </ol>
       </Modal>
     </div>
