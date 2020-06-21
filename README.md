@@ -6,6 +6,8 @@ Maintain the same requirements from Challenge 1. In addition, the app will be ex
 - Users should be able to see past results
 - There should be a place that a user can click to see all the results that have been searched on the app
 - Clicking on a past search result should trigger a request and the results should be displayed for the user.
+- With a GraphQL layer that pulls the users specific search results from your database or API
+- User should only see their own search history
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
